@@ -1,0 +1,426 @@
+From d933be94a3b29d8ef151066139aba221d1d51ff1 Mon Sep 17 00:00:00 2001
+From: Anmol Ahuja <me@anmolahuja.com>
+Date: Sun, 12 Dec 2021 02:07:01 -0800
+Subject: [PATCH] Add a sample list view
+
+---
+ .idea/misc.xml                                |   2 +
+ .../junk_settings_navdrawer/MainActivity.kt   |   4 +
+ .../ui/IngredientsAdapter.kt                  |  42 +++++
+ .../ui/home/HomeFragment.kt                   |  30 ++++
+ .../ui/models/Ingredient.kt                   |   4 +
+ .../ui/models/Product.kt                      |   8 +
+ app/src/main/res/layout/fragment_home.xml     | 169 ++++--------------
+ .../main/res/layout/ingredient_list_item.xml  |  28 +++
+ app/src/main/res/values/themes.xml            |   2 +-
+ 9 files changed, 150 insertions(+), 139 deletions(-)
+ create mode 100644 app/src/main/java/com/example/junk_settings_navdrawer/ui/IngredientsAdapter.kt
+ create mode 100644 app/src/main/java/com/example/junk_settings_navdrawer/ui/models/Ingredient.kt
+ create mode 100644 app/src/main/java/com/example/junk_settings_navdrawer/ui/models/Product.kt
+ create mode 100644 app/src/main/res/layout/ingredient_list_item.xml
+
+diff --git a/.idea/misc.xml b/.idea/misc.xml
+index 4240871..e975f74 100755
+--- a/.idea/misc.xml
++++ b/.idea/misc.xml
+@@ -3,6 +3,7 @@
+   <component name="DesignSurface">
+     <option name="filePathToZoomLevelMap">
+       <map>
++        <entry key="../../../../../layout/custom_preview.xml" value="0.21666666666666667" />
+         <entry key="app/src/main/res/drawable/ic_baseline_search_24.xml" value="0.37135416666666665" />
+         <entry key="app/src/main/res/drawable/login_edittext.xml" value="0.37135416666666665" />
+         <entry key="app/src/main/res/drawable/side_nav_bar.xml" value="0.20925925925925926" />
+@@ -12,6 +13,7 @@
+         <entry key="app/src/main/res/layout/fragment_gallery.xml" value="0.3523550724637681" />
+         <entry key="app/src/main/res/layout/fragment_home.xml" value="0.1" />
+         <entry key="app/src/main/res/layout/fragment_slideshow.xml" value="0.3523550724637681" />
++        <entry key="app/src/main/res/layout/ingredient_list_item.xml" value="0.25833333333333336" />
+         <entry key="app/src/main/res/layout/nav_header_main.xml" value="0.3523550724637681" />
+         <entry key="app/src/main/res/menu/activity_main_drawer.xml" value="0.35520833333333335" />
+         <entry key="app/src/main/res/menu/main.xml" value="0.35520833333333335" />
+diff --git a/app/src/main/java/com/example/junk_settings_navdrawer/MainActivity.kt b/app/src/main/java/com/example/junk_settings_navdrawer/MainActivity.kt
+index e56fe51..795d5bc 100755
+--- a/app/src/main/java/com/example/junk_settings_navdrawer/MainActivity.kt
++++ b/app/src/main/java/com/example/junk_settings_navdrawer/MainActivity.kt
+@@ -11,7 +11,11 @@ import androidx.navigation.ui.setupActionBarWithNavController
+ import androidx.navigation.ui.setupWithNavController
+ import androidx.drawerlayout.widget.DrawerLayout
+ import androidx.appcompat.app.AppCompatActivity
++import androidx.recyclerview.widget.RecyclerView
+ import com.example.junk_settings_navdrawer.databinding.ActivityMainBinding
++import com.example.junk_settings_navdrawer.ui.IngredientsAdapter
++import com.example.junk_settings_navdrawer.ui.models.Ingredient
++import com.example.junk_settings_navdrawer.ui.models.Product
+ 
+ class MainActivity : AppCompatActivity() {
+ 
+diff --git a/app/src/main/java/com/example/junk_settings_navdrawer/ui/IngredientsAdapter.kt b/app/src/main/java/com/example/junk_settings_navdrawer/ui/IngredientsAdapter.kt
+new file mode 100644
+index 0000000..1b4200d
+--- /dev/null
++++ b/app/src/main/java/com/example/junk_settings_navdrawer/ui/IngredientsAdapter.kt
+@@ -0,0 +1,42 @@
++package com.example.junk_settings_navdrawer.ui
++
++import android.content.Context
++import android.view.LayoutInflater
++import android.view.View
++import android.view.ViewGroup
++import android.widget.TextView
++import androidx.recyclerview.widget.RecyclerView
++import com.example.junk_settings_navdrawer.R
++import com.example.junk_settings_navdrawer.ui.models.Product
++
++
++class IngredientsAdapter(
++    private val context: Context,
++    private val dataset: List<Product>,
++): RecyclerView.Adapter<IngredientsAdapter.ItemViewHolder>() {
++    class ItemViewHolder(private val view: View) : RecyclerView.ViewHolder(view) {
++        val textView_product: TextView = view.findViewById(R.id.ingredient_list_item_tv_product)
++        val textView_ingredients: TextView = view.findViewById(R.id.ingredient_list_item_tv_ingredients)
++        val textView_status: TextView = view.findViewById(R.id.ingredient_list_item_tv_status)
++    }
++
++    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ItemViewHolder {
++        val adapterLayout = LayoutInflater.from(parent.context)
++            .inflate(R.layout.ingredient_list_item, parent, false)
++
++        return ItemViewHolder(adapterLayout)
++    }
++
++    override fun onBindViewHolder(holder: ItemViewHolder, position: Int) {
++        // @akul: you might wanna dynamically fetch more results if not in cache instead of taking
++        // a fixed set of results in the contructor
++        val item = dataset[position]
++        holder.textView_product.text =  item.productName
++        holder.textView_ingredients.text =  item.ingredients.joinToString { it -> it.name }
++        holder.textView_status.text =  item.status
++    }
++
++    override fun getItemCount(): Int {
++        return dataset.size
++    }
++}
+diff --git a/app/src/main/java/com/example/junk_settings_navdrawer/ui/home/HomeFragment.kt b/app/src/main/java/com/example/junk_settings_navdrawer/ui/home/HomeFragment.kt
+index 713e92e..df851a6 100755
+--- a/app/src/main/java/com/example/junk_settings_navdrawer/ui/home/HomeFragment.kt
++++ b/app/src/main/java/com/example/junk_settings_navdrawer/ui/home/HomeFragment.kt
+@@ -8,14 +8,19 @@ import android.widget.TextView
+ import androidx.fragment.app.Fragment
+ import androidx.lifecycle.Observer
+ import androidx.lifecycle.ViewModelProvider
++import androidx.recyclerview.widget.RecyclerView
+ import com.example.junk_settings_navdrawer.R
+ import com.example.junk_settings_navdrawer.databinding.FragmentHomeBinding
++import com.example.junk_settings_navdrawer.ui.IngredientsAdapter
++import com.example.junk_settings_navdrawer.ui.models.Ingredient
++import com.example.junk_settings_navdrawer.ui.models.Product
+ 
+ class HomeFragment : Fragment() {
+ 
+     private lateinit var homeViewModel: HomeViewModel
+     private var _binding: FragmentHomeBinding? = null
+ 
++
+     // This property is only valid between onCreateView and
+     // onDestroyView.
+     private val binding get() = _binding!!
+@@ -32,6 +37,31 @@ class HomeFragment : Fragment() {
+         val root: View = binding.root
+ 
+ 
++        var productList = ArrayList<Product>()
++        var sampleList = listOf (
++            Product("p1", listOf(Ingredient("p1i1"), Ingredient("p1i2")), "status1"),
++            Product("p2", listOf(Ingredient("p2i1"), Ingredient("p2i2")), "status2"),
++            Product("p3", listOf(Ingredient("p2i1"), Ingredient("p2i2")), "status2"),
++        )
++        for (i in 1..1000) {
++            var ing = ArrayList<Ingredient>()
++            for (i in 1..4)
++            {
++                ing.add(Ingredient("ing_$i"))
++            }
++
++            productList.add(
++                Product(
++                "product_$i",
++                    ing,
++                    "s_$i")
++            )
++        }
++
++
++        val recyclerView = root.findViewById<RecyclerView>(R.id.recycler_view)
++        recyclerView.adapter = IngredientsAdapter(root.context, productList)
++
+ 
+         return root
+     }
+diff --git a/app/src/main/java/com/example/junk_settings_navdrawer/ui/models/Ingredient.kt b/app/src/main/java/com/example/junk_settings_navdrawer/ui/models/Ingredient.kt
+new file mode 100644
+index 0000000..e4cfdf1
+--- /dev/null
++++ b/app/src/main/java/com/example/junk_settings_navdrawer/ui/models/Ingredient.kt
+@@ -0,0 +1,4 @@
++package com.example.junk_settings_navdrawer.ui.models
++
++class Ingredient(var name: String) {
++}
+\ No newline at end of file
+diff --git a/app/src/main/java/com/example/junk_settings_navdrawer/ui/models/Product.kt b/app/src/main/java/com/example/junk_settings_navdrawer/ui/models/Product.kt
+new file mode 100644
+index 0000000..71aa9ea
+--- /dev/null
++++ b/app/src/main/java/com/example/junk_settings_navdrawer/ui/models/Product.kt
+@@ -0,0 +1,8 @@
++package com.example.junk_settings_navdrawer.ui.models
++
++class Product(
++    var productName: String,
++    var ingredients: List<Ingredient>,
++    var status: String,
++) {
++}
+diff --git a/app/src/main/res/layout/fragment_home.xml b/app/src/main/res/layout/fragment_home.xml
+index 7fc8d2b..3ef8c50 100755
+--- a/app/src/main/res/layout/fragment_home.xml
++++ b/app/src/main/res/layout/fragment_home.xml
+@@ -6,152 +6,45 @@
+     android:layout_height="match_parent"
+    >
+ 
+-    <LinearLayout
++    <RelativeLayout
+         android:layout_width="match_parent"
+         android:layout_height="match_parent"
+         android:background="@color/purple_200"
+         android:orientation="vertical"
+         android:gravity="center|right">
+ 
+-        <LinearLayout
++        <EditText
++            android:id="@+id/editMobileNo"
+             android:layout_width="match_parent"
+-            android:layout_height="0dp"
++            android:layout_height="40dp"
++            android:background="@drawable/login_edittext"
++            android:backgroundTint="#00BCD4"
++            android:drawableLeft="@drawable/ic_baseline_search_24"
++            android:ems="10"
++            android:gravity="center"
++            android:layout_centerInParent="true"
++            android:layout_alignParentTop="true"
++            android:hint="What are you looking for"/>
++        <Button
++            android:id="@+id/done_button"
++            style="@style/Widget.AppCompat.Button.Colored"
++            android:layout_width="match_parent"
++            android:layout_height="wrap_content"
++            android:layout_gravity="center_horizontal"
++            android:layout_marginTop="@dimen/layout_margin"
+             android:layout_weight="1"
+-            android:background="@color/white"
+-            android:gravity="center|right"
+-            android:orientation="horizontal">
+-
+-
+-            <EditText
+-                android:id="@+id/editMobileNo"
+-                android:layout_width="match_parent"
+-                android:layout_height="40dp"
+-                android:layout_margin="5dp"
+-                android:background="@drawable/login_edittext"
+-                android:backgroundTint="#00BCD4"
+-                android:drawableLeft="@drawable/ic_baseline_search_24"
+-                android:ems="10"
+-                android:gravity="center"
+-                android:hint="What are you looking for"></EditText>
+-
+-        </LinearLayout>
+-
+-
++            android:layout_below="@id/editMobileNo"
++            android:background="@color/green"
++            android:text="@string/done" />
+ 
+-            <LinearLayout
+-                android:layout_width="match_parent"
+-                android:layout_height="0dp"
+-                android:layout_weight="1"
+-                android:background="@color/white"
+-                android:gravity="center|right">
+-
+-                <Button
+-                    android:id="@+id/done_button"
+-                    style="@style/Widget.AppCompat.Button.Colored"
+-                    android:layout_width="wrap_content"
+-                    android:layout_height="wrap_content"
+-                    android:layout_gravity="center_horizontal"
+-                    android:layout_marginTop="@dimen/layout_margin"
+-                    android:layout_weight="1"
+-                    android:background="@color/green"
+-                    android:text="@string/done" />
+-
+-        </LinearLayout>
+-
+-    </LinearLayout>
+-
+-    <TableLayout
+-        android:layout_width="match_parent"
+-        android:layout_height="match_parent"
+-        android:padding="5dp"
+-        android:stretchColumns="3"
+-        tools:context=".MainActivity">
+-
+-
+-        <TableRow
++        <androidx.recyclerview.widget.RecyclerView
+             android:layout_width="match_parent"
+-            android:layout_height="match_parent">
+-
+-            <TextView
+-                android:layout_width="131dp"
+-                android:layout_height="35dp"
+-                android:layout_column="1"
+-                android:background="@color/colorPrimary"
+-                android:gravity="center"
+-                android:text="@string/product_name"
+-                android:textColor="@color/white"
+-                android:textSize="18sp" />
+-
+-            <TextView
+-                android:layout_width="181dp"
+-                android:layout_height="35dp"
+-                android:layout_column="2"
+-                android:background="@color/colorPrimary"
+-                android:gravity="center"
+-                android:text="@string/ingredients"
+-                android:textColor="@color/white"
+-                android:textSize="18sp" />
+-            <TextView
+-                android:layout_width="wrap_content"
+-                android:layout_height="35dp"
+-                android:layout_column="2"
+-                android:background="@color/colorPrimary"
+-                android:gravity="center"
+-                android:text="@string/status"
+-                android:textColor="@color/white"
+-                android:textSize="18sp" />
+-        </TableRow>
+-
+-        <TableRow>
+-            <TextView
+-                android:layout_width="100dp"
+-                android:layout_height="wrap_content"
+-                android:layout_column="1"
+-                android:gravity="center"
+-                android:text=""
+-                android:textSize="18sp" />
+-
+-            <TextView
+-                android:layout_width="wrap_content"
+-                android:layout_height="wrap_content"
+-                android:layout_column="2"
+-                android:text=""
+-                android:textSize="18sp" />
+-        </TableRow>
+-
+-        <TableRow>
+-            <TextView
+-                android:layout_width="100dp"
+-                android:layout_height="wrap_content"
+-                android:layout_column="1"
+-                android:gravity="center"
+-                android:text=""
+-                android:textSize="18sp" />
+-            <TextView
+-                android:layout_width="wrap_content"
+-                android:layout_height="wrap_content"
+-                android:layout_column="2"
+-                android:text=""
+-                android:textSize="18sp" />
+-        </TableRow>
+-
+-        <TableRow>
+-            <TextView
+-                android:layout_width="100dp"
+-                android:layout_height="wrap_content"
+-                android:layout_column="1"
+-                android:gravity="center"
+-                android:text=""
+-                android:textSize="18sp" />
+-
+-            <TextView
+-                android:layout_width="wrap_content"
+-                android:layout_height="wrap_content"
+-                android:layout_column="2"
+-                android:text=""
+-                android:textSize="18sp" />
+-        </TableRow>
+-
+-    </TableLayout>
+-
++            android:layout_height="wrap_content"
++            android:layout_below="@id/done_button"
++            android:id="@+id/recycler_view"
++            app:layoutManager="LinearLayoutManager"
++            android:scrollbars="vertical"
++            android:layout_weight="2" />
++
++    </RelativeLayout>
+ </androidx.appcompat.widget.Toolbar>
+\ No newline at end of file
+diff --git a/app/src/main/res/layout/ingredient_list_item.xml b/app/src/main/res/layout/ingredient_list_item.xml
+new file mode 100644
+index 0000000..da298d6
+--- /dev/null
++++ b/app/src/main/res/layout/ingredient_list_item.xml
+@@ -0,0 +1,28 @@
++<?xml version="1.0" encoding="utf-8"?>
++<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
++    android:layout_width="match_parent"
++    android:layout_height="wrap_content">
++
++    <TextView
++        android:id="@+id/ingredient_list_item_tv_product"
++        android:layout_alignParentLeft="true"
++        android:layout_alignParentStart="true"
++        android:layout_width="wrap_content"
++        android:layout_height="match_parent"
++        android:text="Product" />
++    <TextView
++        android:id="@+id/ingredient_list_item_tv_ingredients"
++        android:layout_toEndOf="@id/ingredient_list_item_tv_product"
++        android:layout_toStartOf="@id/ingredient_list_item_tv_status"
++        android:layout_width="wrap_content"
++        android:layout_height="match_parent"
++        android:text="Ingredients" />
++
++    <TextView
++        android:id="@+id/ingredient_list_item_tv_status"
++        android:layout_width="wrap_content"
++        android:layout_height="match_parent"
++        android:layout_alignParentEnd="true"
++        android:text="Status" />
++
++</RelativeLayout>
+\ No newline at end of file
+diff --git a/app/src/main/res/values/themes.xml b/app/src/main/res/values/themes.xml
+index 8a531fa..6850a72 100755
+--- a/app/src/main/res/values/themes.xml
++++ b/app/src/main/res/values/themes.xml
+@@ -7,7 +7,7 @@
+         <item name="colorOnPrimary">@color/white</item>
+         <!-- Secondary brand color. -->
+         <item name="colorSecondary">@color/teal_200</item>
+-        <item name="colorSecondaryVariant">@color/teal_700</item>
++        <item name="colorSecondaryVariant">@color/teal_200</item>
+         <item name="colorOnSecondary">@color/black</item>
+         <!-- Status bar color. -->
+         <item name="android:statusBarColor" tools:targetApi="l">?attr/colorPrimaryVariant</item>
+-- 
+2.30.1 (Apple Git-130)
+
